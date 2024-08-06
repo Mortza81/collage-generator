@@ -1,18 +1,42 @@
-import AWS from 'aws-sdk';
-import dotenv from "dotenv"
-dotenv.config()
-const s3 = new AWS.S3({
-    endpoint: process.env.S3ENDPOINT,
-    accessKeyId: process.env.ACCESSKEY,
-    secretAccessKey:process.env.SECRETKEY
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import dotenv from "dotenv";
+dotenv.config();
+const client = new S3Client({
+  region: "default",
+  endpoint: process.env.S3ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.ACCESSKEY!,
+    secretAccessKey: process.env.SECRETKEY!,
+  },
 });
-async function generateUploadURL() {
-    const params = {
-        Bucket: 'canny',
-        Key: 'collage/yourfile',
-        Expires: 600,
-        ContentType: 'image/jpeg'
-    };
-    return s3.getSignedUrlPromise('putObject', params);
+export async function generateUploadURL() {
+  const command = new PutObjectCommand({
+    Bucket: process.env.BUCKET,
+    Key: "collage/yourfile",
+  });
+
+  const preSignedUrl = await getSignedUrl(client, command, {
+    expiresIn: 3600,
+  });
+  return preSignedUrl;
 }
-export default generateUploadURL
+export async function getImage(fileName: string) {
+  const params = {
+    Bucket: process.env.BUCKET,
+    Key: `collage/${fileName}`,
+  };
+  try {
+    const data = await client.send(new GetObjectCommand(params));
+    if (!data.Body) {
+      throw new Error("there is no file with this name");
+    }
+    return data.Body.transformToByteArray();
+  } catch (error) {
+    console.log(error);
+  }
+}
