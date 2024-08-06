@@ -9,7 +9,7 @@ const s3 = new AWS.S3({
 async function generateUploadURL() {
     const params = {
         Bucket: 'canny',
-        Key: 'yourfile',
+        Key: 'collage/yourfile',
         Expires: 600,
         ContentType: 'image/jpeg'
     };

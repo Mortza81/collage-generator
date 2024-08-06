@@ -11,6 +11,22 @@ const schema=createSchema({
     type Query{
         uploadRequest:String
     }
+    type Mutation{
+        collageRequest(request:createRequestInput):Request
+    }
+    input createRequestInput{
+        images:String
+        borderColor:String
+        verticalOrHorizontal:String
+        borderSize:String
+    }
+    type Request{
+        images:String
+        borderColor:String
+        verticalOrHorizontal:String
+        borderSize:String
+        state:String
+    }
     `,
     resolvers:{
         Query:{
@@ -23,14 +39,18 @@ const schema=createSchema({
                     console.log(err);
                     return 'There was somthing wrong while generating presign url'
                 }
-                return `You can upload your via:${presign}`
+                return `You can upload your images via:${presign}`
             }
+        },
+        Mutation:{
+            
         }
     }
 
 })
 const yoga = createYoga({
-    schema 
+    schema
+    
 })
 
 app.all(
