@@ -37,7 +37,8 @@ const schema = createSchema({
       borderSize: Int!
     }
     type Request {
-      images: String
+      id:ID
+      images: [String]
       borderColor: String
       verticalOrHorizontal: String
       borderSize: String
