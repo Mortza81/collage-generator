@@ -5,14 +5,15 @@ const UserSchema=new mongoose.Schema({
         type:String,
         unique:true
     },
+    uploadUrl:String
 },{
     toJSON:{virtuals:true},
     toObject:{virtuals:true}
 })
 UserSchema.virtual("requests",{
     ref:'Request',
-    localField:'id',
-    foreignField:'userde'
+    localField:'_id',
+    foreignField:'user'
 })
 const User=mongoose.model('User',UserSchema)
 export default User
