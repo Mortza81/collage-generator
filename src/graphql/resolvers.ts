@@ -71,12 +71,6 @@ const resolvers = {
           images: arg.request.images,
           state: "Pending",
         });
-        // await processImage(
-        //   arg.request.images,
-        //   arg.request.borderSize,
-        //   arg.request.borderColor,
-        //   arg.request.verticalOrHorizontal
-        // );
         const queue=await addQueue(user.id)
         queue.add('imageProcess',{
             images: arg.request.images,
@@ -140,21 +134,23 @@ const addQueue = async (userId: string)=> {
     });
     userWorker.on("completed", async (job) => {
       await Log.create({
-        event: "in progress",
+        event: "completed",
         message: `procces completed ${Date.now()}`,
       });
     });
-    userWorker.on("failed", async (job) => {
+    userWorker.on("failed", async (job,err) => {
       await Log.create({
-        event: "in progress",
+        event: "failed",
         message: `procces failed ${Date.now()}`,
       });
     });
+
     queues.set(userId, userQueue);
   }
   return queues.get(userId);
 }catch(err){
     const error = err as Error;
+    console.log(error);
     throw new GraphQLError(error.message,{extensions:{
       Operational:true
     }})
