@@ -17,18 +17,11 @@ async function processImage(
     const targetHeight = 600;
     const targetWidth = 600;
     let resizedImage: Buffer[] = [];
-    try{
     images = await Promise.all(
       imagesNames.map((image: any) => {
         return getImage(image);
       })
     );
-  }catch(err){
-    const error = err as Error;
-    throw new GraphQLError(error.message,{extensions:{
-      Operational:true
-    }})
-  }
     if (verticalOrHorizontal == "horizontal") {
       resizedImage = await Promise.all(
         images.map(async (image) => {
