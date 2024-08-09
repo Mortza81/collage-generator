@@ -4,6 +4,7 @@ import { upload } from "./oStorageConfig";
 import {GraphQLError} from "graphql";
 import { error } from "console";
 async function processImage(
+  fileName:string,
   imagesNames: [string],
   borderSize: number,
   borderColor: sharp.Color,
@@ -102,7 +103,7 @@ async function processImage(
       );
     }
     const finalImage=await collage.jpeg().toBuffer();
-    upload(finalImage)
+    upload(finalImage,fileName)
   } catch (err) {
     const error = err as Error;
     throw new GraphQLError(error.message,{extensions:{

@@ -7,10 +7,11 @@ import Request from "../db/requestModel";
 import { generateUploadURL } from "../oStorageConfig";
 import User from "../db/userModel";
 import Log from "../db/logs";
+import { CloudWatchLogs } from "aws-sdk";
 
 // const connection = new redis({
 //   host: "localhost",
-//   port: 6380,
+//   port: 6379,
 // });
 
 type uploadRequestInput = {
@@ -71,20 +72,21 @@ const resolvers = {
           images: arg.request.images,
           state: "Pending",
         });
-        const queue=await addQueue(user.id)
-        queue.add('imageProcess',{
-            images: arg.request.images,
-            borderSize: arg.request.borderSize,
-            borderColor: arg.request.borderColor,
-            verticalOrHorizontal:arg.request.verticalOrHorizontal
+        const queue = await addQueue(user.id);
+        queue.on("waiting",async (job)=>{
+          await Log.create({
+            request:job.id
+            ,message:`process added to the wait list`
+          })
         })
-    
-        request = await Request.findByIdAndUpdate(request.id, {
-          state: "Successfull",
-        });
+        await queue.add("imageProcess", {
+          images: arg.request.images,
+          borderSize: arg.request.borderSize,
+          borderColor: arg.request.borderColor,
+          verticalOrHorizontal: arg.request.verticalOrHorizontal,
+        },{jobId:request.id});
         return request;
       } catch (err) {
-        await Request.findByIdAndUpdate(request!.id, { state: "failed" });
         const error = err as GraphQLError;
         if (error.extensions.Operational) {
           throw new GraphQLError(error.message);
@@ -97,63 +99,77 @@ const resolvers = {
   },
 };
 const queues = new Map();
-const addQueue = async (userId: string)=> {
-    try{
-  if (!queues.has(userId)) {
-    const userQueue = new Queue(`process ${userId}`, { connection:{
-        host:'localhost',
-        port:6380
-    }});
+const addQueue = async (userId: string):Promise<Queue<any, any, string>> => {
+  try {
+    if (!queues.has(userId)) {
+      const userQueue = new Queue(`process ${userId}`, {
+        connection: {
+          host: "localhost",
+          port: 6379,
+        },
+      });
 
-    const userWorker = new Worker(
-      `process ${userId}`,
-      async (job) => {
-        await processImage(
-          job.data.images,
-          job.data.borderSize,
-          job.data.borderColor,
-          job.data.verticalOrHorizontal
-        );
-      },
-      { connection:{
-        host:'localhost',
-        port:6380
-    }}
-    );
-    userWorker.on("active", async (job) => {
-      await Log.create({
-        event: "activate",
-        message: `procces activate ${Date.now()}`,
+      const userWorker = new Worker(
+        `process ${userId}`,
+        async (job) => {
+          await processImage(
+            job.id!,
+            job.data.images,
+            job.data.borderSize,
+            job.data.borderColor,
+            job.data.verticalOrHorizontal
+          );
+        },
+        {
+          connection: {
+            host: "localhost",
+            port: 6379,
+          },
+        }
+      );
+      userWorker.on("active", async (job) => {
+        await Log.create({
+          message: `procces starts ${Date.now()}`,
+        });
       });
-    });
-    userWorker.on("progress", async (job) => {
-      await Log.create({
-        event: "in progress",
-        message: `procces in progress ${Date.now()}`,
+      userWorker.on("progress", async (job) => {
+        await Log.create({
+          message: `procces in progress ${Date.now()}`,
+        });
       });
-    });
-    userWorker.on("completed", async (job) => {
-      await Log.create({
-        event: "completed",
-        message: `procces completed ${Date.now()}`,
+      userWorker.on("completed", async (job) => {
+        await Request.findByIdAndUpdate(job.id,{
+          state:'Successfull'
+        })
+        await Log.create({
+          message: `procces completed ${Date.now()}`,
+        });
       });
-    });
-    userWorker.on("failed", async (job,err) => {
-      await Log.create({
-        event: "failed",
-        message: `procces failed ${Date.now()}`,
+      userWorker.on("failed", async (job,err)=> {
+        await Request.findByIdAndUpdate(job!.id,{
+          state:'Failed'
+        })
+        const error=err as GraphQLError
+        let cause='Unexpected error'
+        if(error.extensions.Operational){
+          cause=error.message
+        }
+        await Log.create({
+          event: "failed",
+          message: `procces failed cause: ${cause} ${Date.now()}`,
+        });
       });
-    });
 
-    queues.set(userId, userQueue);
-  }
-  return queues.get(userId);
-}catch(err){
+      queues.set(userId, userQueue);
+    }
+    return queues.get(userId);
+  } catch (err) {
     const error = err as Error;
-    console.log(error);
-    throw new GraphQLError(error.message,{extensions:{
-      Operational:true
-    }})
-}
+    throw new GraphQLError(error.message, {
+      extensions: {
+        Operational: true,
+      },
+    });
+  }
 };
 export default resolvers;

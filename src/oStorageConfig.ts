@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 import { GraphQLError } from "graphql";
 dotenv.config();
 const client = new S3Client({
-  region: "default",
+  region: "us-east-1",
   endpoint: process.env.S3ENDPOINT,
   credentials: {
     accessKeyId: process.env.ACCESSKEY!,
@@ -48,11 +48,11 @@ export async function getImage(fileName: string) {
     });
   }
 }
-export async function upload(file: Buffer) {
+export async function upload(file: Buffer,name:string) {
   const params = {
     Body: file,
     Bucket: process.env.BUCKET,
-    Key: `collage/results/test.jpeg`,
+    Key: `collage/results/${name}.jpeg`,
   };
   try {
     await client.send(new PutObjectCommand(params));
