@@ -2,6 +2,9 @@ import {
   S3Client,
   GetObjectCommand,
   PutObjectCommand,
+  ListObjectsCommand,
+  _Object,
+  DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
@@ -15,9 +18,9 @@ const client = new S3Client({
     secretAccessKey: process.env.SECRETKEY!,
   },
 });
-export async function generatePresignedURL(purpose: string,fileName?:string) {
+export async function generatePresignedURL(purpose: string, fileName?: string) {
   try {
-    let command
+    let command;
     if (purpose == "Download") {
       command = new GetObjectCommand({
         Bucket: process.env.BUCKET,
@@ -75,3 +78,41 @@ export async function upload(file: Buffer, name: string) {
     });
   }
 }
+export async function deleteOldImages() {
+  const limit=1*24*60*60*1000
+  const now=new Date().getTime()
+  const objToDel: any[]=[]
+  const params = {
+    Bucket: process.env.BUCKET,
+    Prefix: "collage/",
+  };
+  try {
+    const command = new ListObjectsCommand(params);
+    const res = await client.send(command);
+    const list = res.Contents?.filter(
+      (file) => file.Key !== "collage/" && file.Key !== "collage/results/"
+    );
+    list?.map((file)=>{
+      const dateFile=new Date(file.LastModified!).getTime()
+      if(dateFile < now-limit){
+        objToDel.push({ Key: file.Key! })
+      }
+    })
+    if(objToDel.length==0){
+      console.log("No old file to delete");
+      return
+    }
+    const delParams={
+      Bucket: process.env.BUCKET,
+      Delete: {
+        Objects: objToDel
+      }
+    }
+    const delCommand=new DeleteObjectsCommand(delParams)
+    await client.send(delCommand)
+    console.log('Old images deleted successfully');
+  } catch (err) {
+    console.log(err);
+  }
+}
+

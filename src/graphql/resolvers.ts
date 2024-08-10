@@ -1,8 +1,6 @@
 import { GraphQLError } from "graphql";
 import processImage from "../processImage";
 import { Worker, Queue } from "bullmq";
-import redis from "ioredis";
-import mongoose from "mongoose";
 import Request from "../db/requestModel";
 import { generatePresignedURL } from "../oStorageConfig";
 import User from "../db/userModel";
