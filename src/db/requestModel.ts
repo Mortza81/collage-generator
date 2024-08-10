@@ -10,14 +10,18 @@ const RequestSchema = new mongoose.Schema({
   borderColor: {
     type: String,
   },
-  user: {
+  userEmail: {
     ref: "User",
-    type: mongoose.Schema.ObjectId,
+    type: String,
   },
   state: {
     type: String,
-    enum: ["Pending","Canceled","Failed",'Successfull'],
+    enum: ["Pending","Cancelled","Failed",'Successfull'],
   },
+  date:{
+    type:Date,
+    default:Date.now()
+  }
 });
 const Request = mongoose.model("Request", RequestSchema);
 export default Request;

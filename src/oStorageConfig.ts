@@ -15,20 +15,29 @@ const client = new S3Client({
     secretAccessKey: process.env.SECRETKEY!,
   },
 });
-export async function generateUploadURL() {
+export async function generatePresignedURL(purpose: string,fileName?:string) {
   try {
-    const command = new PutObjectCommand({
-      Bucket: process.env.BUCKET,
-      Key: "collage/yourfile",
-    });
-
+    let command
+    if (purpose == "Download") {
+      command = new GetObjectCommand({
+        Bucket: process.env.BUCKET,
+        Key: `collage/results/${fileName}.jpeg`,
+        ResponseContentType: "image/jpeg",
+      });
+    } else {
+      command = new GetObjectCommand({
+        Bucket: process.env.BUCKET,
+        Key: "collage/5.jpg",
+        ResponseContentType: "image/jpeg",
+      });
+    }
     const preSignedUrl = await getSignedUrl(client, command, {
       expiresIn: 3600,
     });
     return preSignedUrl;
   } catch (err) {
-    const error=err as Error
-    throw new GraphQLError(error.message)
+    const error = err as Error;
+    throw new GraphQLError(error.message);
   }
 }
 export async function getImage(fileName: string) {
@@ -48,7 +57,7 @@ export async function getImage(fileName: string) {
     });
   }
 }
-export async function upload(file: Buffer,name:string) {
+export async function upload(file: Buffer, name: string) {
   const params = {
     Body: file,
     Bucket: process.env.BUCKET,

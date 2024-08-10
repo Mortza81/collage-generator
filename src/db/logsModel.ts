@@ -6,7 +6,7 @@ const logSchema=new mongoose.Schema({
         type:mongoose.Schema.ObjectId
         ,ref:"Request"
     },
-    time:{
+    date:{
         type:Date,
         default:Date.now()
     }
