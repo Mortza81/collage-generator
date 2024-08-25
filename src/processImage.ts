@@ -81,23 +81,30 @@ async function processImage(
       });
     }
     if (verticalOrHorizontal == "horizontal") {
+      let currentL=0
       collage.composite(
         resizedImage.map((image: any, index) => {
+          if(index!=0){
+          currentL+=imageMetas[index-1].width!+borderSize
+          }
           return {
             input: image,
             top: borderSize,
-            left: index * (imageMetas[0].width! + borderSize) + borderSize,
+            left:currentL+ borderSize,
           };
         })
       );
     } else {
+      let currentH=0
       collage.composite(
         resizedImage.map((image: any, index) => {
+          if(index!=0){
+            currentH+=imageMetas[index-1].height!+borderSize
+            }
           return {
             input: image,
-            top: index * (imageMetas[0].height! + borderSize) + borderSize,
+            top: currentH + borderSize,
             left: borderSize,
-            blend: 'dest-in'
           };
         })
       );
