@@ -18,7 +18,7 @@ const client = new S3Client({
     secretAccessKey: process.env.SECRETKEY!,
   },
 });
-export async function generatePresignedURL(purpose: string, fileName?: string) {
+export async function generatePresignedURL(purpose: string, fileName: string) {
   try {
     let command;
     if (purpose == "Download") {
@@ -28,10 +28,9 @@ export async function generatePresignedURL(purpose: string, fileName?: string) {
         ResponseContentType: "image/jpeg",
       });
     } else {
-      command = new GetObjectCommand({
+      command = new PutObjectCommand({
         Bucket: process.env.BUCKET,
-        Key: "collage/5.jpg",
-        ResponseContentType: "image/jpeg",
+        Key: `collage/${fileName}`
       });
     }
     const preSignedUrl = await getSignedUrl(client, command, {

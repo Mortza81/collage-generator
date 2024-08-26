@@ -23,6 +23,7 @@ const schema = /* GraphQL */ `
   input uploadRequestInput {
     name: String!
     email: String!
+    fileName:String!
   }
   input createRequestInput {
     email: String!

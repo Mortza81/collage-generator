@@ -10,6 +10,7 @@ type uploadRequestInput = {
   info: {
     name: string;
     email: string;
+    fileName:string
   };
 };
 type createRequestInput = {
@@ -92,14 +93,16 @@ const resolvers = {
       let presign;
       let user;
       try {
-        presign = await generatePresignedURL("upload");
+        presign = await generatePresignedURL("upload",arg.info.fileName);
         user = await User.findOne({ email: arg.info.email });
         if (!user) {
           user = await User.create({
             name: arg.info.name,
             email: arg.info.email,
+            uploadFiles:[arg.info.fileName]
           });
         }
+        user.uploadFiles.push(arg.info.fileName)
         user.uploadUrl = presign;
         await user.save();
         return user;
@@ -119,6 +122,15 @@ const resolvers = {
             },
           });
         }
+        arg.request.images.map((image)=>{
+          if(!user.uploadFiles.includes(image)){
+            throw new GraphQLError(`${image} does not belogs to you`, {
+              extensions: {
+                Operational: true,
+              },
+            });
+          }
+        })
         request = await Request.create({
           userEmail: arg.request.email,
           borderColor: arg.request.borderColor,
@@ -201,7 +213,7 @@ const addOrGetQueue = async (
       userWorker.on("completed", async (job) => {
         await Request.findByIdAndUpdate(job.id, {
           state: "Successfull",
-          link: await generatePresignedURL("Download", job.id),
+          link: await generatePresignedURL("Download", job.id!),
         });
         await Log.create({
           request: job.id,

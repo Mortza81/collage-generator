@@ -5,7 +5,8 @@ const UserSchema=new mongoose.Schema({
         type:String,
         unique:true
     },
-    uploadUrl:String
+    uploadUrl:String,
+    uploadFiles:[String],
 },{
     toJSON:{virtuals:true},
     toObject:{virtuals:true}
