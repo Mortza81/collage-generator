@@ -11,7 +11,7 @@ import dotenv from "dotenv";
 import { GraphQLError } from "graphql";
 dotenv.config();
 const client = new S3Client({
-  region: "us-east-1",
+  region: "default",
   endpoint: process.env.S3ENDPOINT,
   credentials: {
     accessKeyId: process.env.ACCESSKEY!,
