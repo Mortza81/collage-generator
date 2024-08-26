@@ -25,6 +25,6 @@ mongoose.connect(process.env.DB_URL!).then(() => {
 });
 console.log("GraphQL is running at http://localhost:4000/graphql");
 import cron from "node-cron"
-cron.schedule("0 3 * * 0",()=>{
-    deleteOldImages()
+cron.schedule("0 3 * * 0",async ()=>{
+    await deleteOldImages()
 })

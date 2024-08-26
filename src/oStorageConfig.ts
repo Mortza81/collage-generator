@@ -79,9 +79,9 @@ export async function upload(file: Buffer, name: string) {
   }
 }
 export async function deleteOldImages() {
-  const limit=1*24*60*60*1000
-  const now=new Date().getTime()
-  const objToDel: any[]=[]
+  const limit = 7 * 24 * 60 * 60 * 1000;
+  const now = new Date().getTime();
+  const objToDel: {Key: string}[] = [];
   const params = {
     Bucket: process.env.BUCKET,
     Prefix: "collage/",
@@ -89,30 +89,28 @@ export async function deleteOldImages() {
   try {
     const command = new ListObjectsCommand(params);
     const res = await client.send(command);
-    const list = res.Contents?.filter(
-      (file) => file.Key !== "collage/" && file.Key !== "collage/results/"
-    );
-    list?.map((file)=>{
-      const dateFile=new Date(file.LastModified!).getTime()
-      if(dateFile < now-limit){
-        objToDel.push({ Key: file.Key! })
+    res.Contents?.forEach((file) => {
+      if (file.Key !== "collage/" && file.Key !== "collage/results/") {
+        const fileLastModified = new Date(file.LastModified!).getTime();
+        if (fileLastModified < now - limit) {
+          objToDel.push({ Key: file.Key! });
+        }
       }
-    })
-    if(objToDel.length==0){
+    });
+    if (objToDel.length == 0) {
       console.log("No old file to delete");
-      return
+      return;
     }
-    const delParams={
+    const delParams = {
       Bucket: process.env.BUCKET,
       Delete: {
-        Objects: objToDel
-      }
-    }
-    const delCommand=new DeleteObjectsCommand(delParams)
-    await client.send(delCommand)
-    console.log('Old images deleted successfully');
+        Objects: objToDel,
+      },
+    };
+    const delCommand = new DeleteObjectsCommand(delParams);
+    await client.send(delCommand);
+    console.log("Old images deleted successfully");
   } catch (err) {
     console.log(err);
   }
 }
-
